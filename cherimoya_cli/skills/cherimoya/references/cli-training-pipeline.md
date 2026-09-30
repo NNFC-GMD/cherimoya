@@ -57,6 +57,10 @@ Common novice edits — always explain the change you make:
 - **Out of GPU memory?** Lower `fit_parameters.batch_size` (64 → 32/16) or
   `fit_parameters.n_filters` (128 → 64), or set `fit_parameters.dtype` to
   `"bfloat16"`.
+- **Several GPUs?** Set `fit_parameters.devices` (default 1; `-1` = every
+  visible GPU) to train with DDP. `batch_size` is the *global* batch, split
+  evenly across devices, so it must be divisible by `devices`. The pipeline
+  then runs the fit step as a separate `python -m cherimoya_cli fit` process.
 - **Small dataset?** See dataset-size guidance in
   `references/troubleshooting.md`.
 - **Want replicates?** `random_state` defaults to `0`, so rerunning the same

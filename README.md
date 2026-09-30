@@ -45,7 +45,7 @@ GPU acceleration requires Triton and a CUDA-capable device; a pure-PyTorch CPU f
 
 ### What you can do with Cherimoya
 
-- Train a sequence-to-function model on [TF ChIP-seq](https://cherimoya.readthedocs.io/en/latest/recipes/chipseq_tf.html), [ATAC-seq](https://cherimoya.readthedocs.io/en/latest/recipes/atacseq.html), [DNase-seq](https://cherimoya.readthedocs.io/en/latest/recipes/dnaseq.html), or any signal that can be expressed as a stranded or unstranded coverage track. Multi-task models that share a backbone across several modalities — for example ATAC co-trained with several stranded TFs — are also supported; see [the multi-task guide](https://cherimoya.readthedocs.io/en/latest/multi_task.html).
+- Train a sequence-to-function model on [TF ChIP-seq](https://cherimoya.readthedocs.io/en/latest/recipes/chipseq_tf.html), [ATAC-seq](https://cherimoya.readthedocs.io/en/latest/recipes/atacseq.html), [DNase-seq](https://cherimoya.readthedocs.io/en/latest/recipes/dnaseq.html), or any signal that can be expressed as a stranded or unstranded coverage track. Multi-task models that share a backbone across several modalities — for example ATAC co-trained with several stranded TFs — are also supported; see [the multi-task guide](https://cherimoya.readthedocs.io/en/latest/multi_task.html). Training runs on PyTorch Lightning, on one device or, with the `devices` setting, several GPUs with DDP.
 - Compute per-base attribution scores via [DeepLIFT/SHAP or *in silico* saturation mutagenesis](https://cherimoya.readthedocs.io/en/latest/tutorials/attribution.html).
 - Call seqlets and discover *de novo* motifs with [TF-MoDISco](https://cherimoya.readthedocs.io/en/latest/tutorials/attribution.html#tf-modisco-motif-discovery).
 - Annotate seqlets against a known motif database via [tomtom-lite](https://cherimoya.readthedocs.io/en/latest/tutorials/attribution.html#tomtom-lite-annotation).
@@ -112,7 +112,7 @@ This calls peaks with MACS3, samples GC-matched negatives, trains a Cherimoya mo
 
 ### Python API and saving/loading
 
-For programmatic use, the public API is `Cherimoya` (the model), `CheriBlock` (the building block), `EMA` (the parameter exponential-moving-average wrapper used during training), and four output wrappers — `ControlWrapper`, `ProfileWrapper`, `LogCountWrapper`, and `ExpectedCountsWrapper` — that expose a single tensor from the model's `(profile, log-count)` output for attribution and design tools. See the [Python API tutorial](https://cherimoya.readthedocs.io/en/latest/tutorials/python_api.html) for an end-to-end training walkthrough:
+For programmatic use, the public API is `Cherimoya` (the model), `CheriBlock` (the building block), `EMA` (the parameter exponential-moving-average wrapper used during training), and four output wrappers — `ControlWrapper`, `ProfileWrapper`, `LogCountWrapper`, and `ExpectedCountsWrapper` — that expose a single tensor from the model's `(profile, log-count)` output for attribution and design tools. Training is `cherimoya.training.fit`, which builds a PyTorch Lightning `Trainer` around the model. See the [Python API tutorial](https://cherimoya.readthedocs.io/en/latest/tutorials/python_api.html) for an end-to-end training walkthrough:
 
 ```python
 from cherimoya import Cherimoya
@@ -129,7 +129,7 @@ model = Cherimoya.load("my_model.torch")              # CPU by default
 model = Cherimoya.load("my_model.torch", device="cuda")
 ```
 
-Older checkpoints saved with `torch.save(model, ...)` are not compatible with `Cherimoya.load` and must be retrained. The CLI subcommands and `model.fit(...)` use this format internally. See [the save/load guide](https://cherimoya.readthedocs.io/en/latest/tutorials/save_load.html) for full semantics (including that the saved weights are the EMA snapshot) and [the Python API reference](https://cherimoya.readthedocs.io/en/latest/api/model.html) for the full `fit()` and `predict()` signatures.
+Older checkpoints saved with `torch.save(model, ...)` are not compatible with `Cherimoya.load` and must be retrained. The CLI subcommands and `cherimoya.training.fit(...)` use this format internally. See [the save/load guide](https://cherimoya.readthedocs.io/en/latest/tutorials/save_load.html) for full semantics (including that the saved weights are the EMA snapshot) and [the training API reference](https://cherimoya.readthedocs.io/en/latest/api/training.html) for the full `fit()` signature.
 
 ### Claude Code skill
 

@@ -303,7 +303,9 @@ Unspecified keys fall back to the fit-level defaults.
      - Fixed residual scalar.
    * - ``batch_size``
      - 64
-     - Training batch size.
+     - Global training batch size, split evenly across ``devices``, so
+       it must be divisible by ``devices``. Training raises an error if
+       the training set holds fewer examples than one batch.
    * - ``muon_lr``
      - 0.025
      - Muon learning rate.
@@ -335,7 +337,7 @@ Unspecified keys fall back to the fit-level defaults.
      - Negatives per peak per epoch.
    * - ``num_workers``
      - 1
-     - Async prefetch workers for the data loader.
+     - Data-loading workers per device.
    * - ``early_stopping``
      - ``null``
      - Stop after N consecutive epochs with no validation count
@@ -385,10 +387,34 @@ Unspecified keys fall back to the fit-level defaults.
      - Center loci on narrowPeak summit column.
    * - ``dtype``
      - ``"float32"``
-     - Training dtype (``"bfloat16"`` enables autocast).
+     - Training precision, mapped to Lightning's ``"32-true"``,
+       ``"bf16-mixed"`` (``"bfloat16"``) or ``"16-mixed"``
+       (``"float16"``). The two half precisions run the forward pass
+       under autocast, and ``"float16"`` also scales the loss.
    * - ``device``
      - ``"cuda"``
-     - Training device.
+     - Training device, passed to Lightning as the accelerator
+       (``"cuda"`` becomes ``"gpu"``).
+   * - ``devices``
+     - 1
+     - Number of devices to train on; ``-1`` uses every visible device.
+       More than one trains with DDP. See `Training on several devices`_.
+   * - ``verbose``
+     - ``false``
+     - Print the run's setup and a table with one row per epoch (the
+       columns ``Epoch``, ``Iteration``,
+       ``Training Time``, ``Validation Time``, ``Training MNLL``,
+       ``Training Count MSE``, ``Validation MNLL``, ``Validation Profile
+       Pearson``, ``Validation Count Pearson``, ``Validation Count MSE`` and
+       ``Saved?``), and allow a progress bar. Left ``null`` here, the
+       pipeline's top-level value is used.
+   * - ``progress_bar``
+     - ``null``
+     - With ``verbose``, whether to draw Lightning's progress bar, with the
+       latest validation profile and count Pearson to its right. ``null``
+       draws it only when stdout is a terminal or a Jupyter kernel, so a
+       run redirected to a file logs just the table. Several runs sharing
+       one terminal overwrite each other's bars; set ``false`` for them.
    * - ``random_state``
      - 0
      - Base RNG seed. See :ref:`what a seed fixes <reproducibility>`.
@@ -622,6 +648,42 @@ keys ``sequences``, ``loci``, ``negatives``, ``signals``,
 ``controls``, ``exclusion_lists``, and ``performance_filename``
 (default ``"performance.tsv"``). On completion, ``fit`` also writes
 the resulting ``evaluate`` JSON and invokes the evaluate step.
+
+Training runs through :func:`cherimoya.training.fit` and writes four
+files next to ``name``:
+
+* ``{name}.torch`` — the EMA weights from the epoch with the highest
+  mean validation count Pearson.
+* ``{name}.final.torch`` — the EMA weights at the end of training.
+* ``{name}.log`` — one tab-separated row per epoch of training and
+  validation measures, with the columns listed under ``verbose`` above.
+* ``{name}.detailed.log`` — the same, plus one profile and one count
+  Pearson column per signal group.
+
+Both checkpoints load with :meth:`cherimoya.Cherimoya.load`.
+:doc:`multi_task` describes the two logs and how the per-group averages
+are formed.
+
+
+Training on several devices
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+With ``devices`` other than 1, training uses DDP. ``batch_size`` is
+the global batch and must be divisible by the number of devices; each
+device takes an equal contiguous slice of every global batch, so
+each step sees exactly the examples one device would. A trailing
+partial global batch is dropped, on one device or several. Validation
+is split across the devices without padding, and the metrics are
+computed over the whole validation set.
+
+Lightning starts every rank after the first by re-running the current
+command, so everything in ``cherimoya fit`` before training runs once
+per rank; only rank 0 prints and runs the evaluate step. With
+``random_state`` set to ``null``, the ranks Lightning launches use the
+seed rank 0 drew. In ``cherimoya pipeline``, when ``devices`` is not 1
+the fit step runs as a separate ``python -m cherimoya_cli fit -p
+{name}.fit.json`` process, so that the re-run command is the fit
+rather than the whole pipeline.
 
 
 cherimoya evaluate

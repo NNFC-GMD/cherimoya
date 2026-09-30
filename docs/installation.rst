@@ -78,6 +78,9 @@ Cherimoya checks.
    * - ``triton`` (≥ 3.5.1)
      - Custom GPU kernels for Cheri Blocks (fwd+bwd) and the inference
        megakernel.
+   * - ``lightning`` (≥ 2.6.1)
+     - The training loop in :mod:`cherimoya.training`: the ``Trainer``,
+       multi-GPU DDP, checkpointing and early stopping.
    * - ``numpy`` (≥ 1.14), ``scipy`` (≥ 1.0), ``pandas`` (≥ 1.3.3)
      - Numerical computing and tabular data handling.
    * - ``h5py`` (≥ 3.7)
