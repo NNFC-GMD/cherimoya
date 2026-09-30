@@ -90,6 +90,7 @@ def run(args):
 	import argparse
 	import copy
 	import hashlib
+	import itertools
 	import os
 	import json
 
@@ -104,6 +105,7 @@ def run(args):
 	from cherimoya.io import PeakGenerator, normalize_signal_groups
 	from cherimoya.training import fit
 
+	from tangermeme.io import _interleave_loci
 	from tangermeme.io import extract_loci
 
 	from . import evaluate as evaluate_cmd
@@ -119,13 +121,24 @@ def run(args):
 	if parameters["skip"]:
 		return
 
+	# A chromosome in two splits would score the model on data it was
+	# trained on or selected with.
+	splits = {name: parameters[name] or [] for name in ("training_chroms",
+		"validation_chroms", "test_chroms")}
+	for (a, chroms_a), (b, chroms_b) in itertools.combinations(splits.items(), 2):
+		shared = sorted(set(chroms_a) & set(chroms_b))
+		if shared:
+			raise ValueError("{} and {} share {}. Give each chromosome to at "
+				"most one split, or set test_chroms to null to skip the test "
+				"evaluation.".format(a, b, shared))
+
 	# Resolve the seed before anything draws from an RNG. A null
 	# `random_state` means "pick one and tell me" rather than "stay
 	# unseeded": the run still varies between invocations, but the seed
-	# that produced it is printed and written into the evaluate JSON, so
+	# that produced it is printed and written into the evaluate JSONs, so
 	# the run can be repeated afterwards. Drawing it here and storing it
-	# back into `parameters` is what puts it in that JSON, which is a
-	# deepcopy of this dict. The ranks Lightning launches after the first
+	# back into `parameters` is what puts it in those JSONs, which are
+	# deepcopies of this dict. The ranks Lightning launches after the first
 	# read rank 0's draw from `PL_GLOBAL_SEED`, which `seed_everything`
 	# sets before they start; rank 0 itself always draws, so a value left
 	# in the environment by an earlier run in the same process is ignored.
@@ -147,7 +160,7 @@ def run(args):
 
 			# Printed whether or not `verbose` is set: a drawn seed is
 			# the one part of the run that cannot be recovered afterwards
-			# if training dies before the evaluate JSON is written.
+			# if training dies before the evaluate JSONs are written.
 			say("Drew random_state={}; set it in the JSON to repeat this run."
 				.format(seed))
 
@@ -161,18 +174,18 @@ def run(args):
 	# the per-group sizes. The flat list is what extract_loci and the
 	# `bam2bw`-style tooling need; the group sizes determine the
 	# channel permutation used under RC and the number of count
-	# predictions. We deliberately do NOT mutate ``parameters['signals']``
-	# here — the structured form (e.g. ``[[plus.bw, minus.bw]]``) is what
-	# the downstream evaluate JSON needs to re-parse the grouping
-	# correctly. Mutating to the flat form here would silently
-	# re-interpret a stranded pair as two unstranded channels in the
-	# evaluate step.
+	# predictions. ``parameters`` keeps the structured form (e.g.
+	# ``[[plus.bw, minus.bw]]``) because the evaluate JSONs are copied from
+	# it, and evaluate reads the control grouping from there for
+	# reverse-complement averaging. The signal grouping it takes from the
+	# checkpoint.
 	signal_files, signal_groups = normalize_signal_groups(parameters["signals"])
 	control_files, control_groups = normalize_signal_groups(parameters["controls"])
 
 	if parameters["verbose"]:
 		say("Training Chroms: ", parameters["training_chroms"])
-		say("Vaidation Chroms: ", parameters["validation_chroms"])
+		say("Validation Chroms: ", parameters["validation_chroms"])
+		say("Test Chroms: ", parameters["test_chroms"])
 
 		say("\nLoading peaks from: ", parameters["loci"])
 		say("Loading negatives from: ", parameters["negatives"])
@@ -207,6 +220,7 @@ def run(args):
 		control_groups=control_groups,
 	).dataset
 
+	# Centered as the training peaks are; negatives have no summit column.
 	valid_data = extract_loci(
 		sequences=parameters["sequences"],
 		signals=signal_files,
@@ -216,6 +230,7 @@ def run(args):
 		in_window=parameters["in_window"],
 		out_window=parameters["out_window"],
 		max_jitter=0,
+		summits=parameters["summits"],
 		exclusion_lists=parameters["exclusion_lists"],
 		ignore=list("QWERYUIOPSDFHJKLZXVBNM"),
 		verbose=parameters["verbose"],
@@ -223,9 +238,11 @@ def run(args):
 
 	# Every negative on the validation chromosomes joins the validation
 	# set, labeled 0, for the measures that separate peaks from negatives.
+	# `extract_loci` raises when none falls on them, hence the check.
 	n_valid_peaks, n_valid_negatives = len(valid_data[0]), 0
 	valid_labels = None
-	if parameters["negatives"] is not None:
+	if parameters["negatives"] is not None and len(_interleave_loci(
+		parameters["negatives"], parameters["validation_chroms"])) > 0:
 		negative_data = extract_loci(
 			sequences=parameters["sequences"],
 			signals=signal_files,
@@ -274,6 +291,8 @@ def run(args):
 		trimming=trimming,
 		name=parameters["name"],
 		verbose=parameters["verbose"],
+		compile=parameters["compile"],
+		compile_mode=parameters["compile_mode"],
 		random_state=parameters["random_state"],
 	)
 
@@ -355,15 +374,20 @@ def run(args):
 
 	model_name = parameters["name"] or model.name
 
-	evaluate_parameters = copy.deepcopy(parameters)
-	evaluate_parameters["chroms"] = parameters["validation_chroms"]
-	evaluate_parameters["max_jitter"] = 0
-	evaluate_parameters["reverse_complement"] = False
-	evaluate_parameters["model"] = model_name + ".torch"
-	evaluate_parameters["performance_filename"] = model_name + ".performance.tsv"
+	# The validation chromosomes chose the checkpoint, so only the test
+	# chromosomes give an estimate that took no part in training.
+	for split in ("validation", "test"):
+		if not parameters[split + "_chroms"]:
+			continue
 
-	fname = "{}.evaluate.json".format(model_name)
-	with open(fname, "w") as outfile:
-		outfile.write(json.dumps(evaluate_parameters, sort_keys=True, indent=4))
+		evaluate_parameters = copy.deepcopy(parameters)
+		evaluate_parameters["chroms"] = parameters[split + "_chroms"]
+		evaluate_parameters["model"] = model_name + ".torch"
+		evaluate_parameters["performance_filename"] = "{}.{}.performance.tsv".format(
+			model_name, split)
 
-	evaluate_cmd.run(argparse.Namespace(parameters=fname))
+		fname = "{}.{}.evaluate.json".format(model_name, split)
+		with open(fname, "w") as outfile:
+			outfile.write(json.dumps(evaluate_parameters, sort_keys=True, indent=4))
+
+		evaluate_cmd.run(argparse.Namespace(parameters=fname))

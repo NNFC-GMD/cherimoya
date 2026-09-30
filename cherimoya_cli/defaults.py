@@ -31,7 +31,7 @@
 # order. Set it to any other integer to get an independent run -- rerunning
 # the same JSON unchanged reproduces the same model rather than giving an
 # independent replicate. Setting it to null does not turn seeding off; it
-# means "draw a seed, print it, and record it in the evaluate JSON", so an
+# means "draw a seed, print it, and record it in the evaluate JSONs", so an
 # unplanned run can still be repeated afterwards.
 #
 # Seeding does not make CUDA training bitwise reproducible. The fused
@@ -46,6 +46,10 @@ training_chroms = ["chr2", "chr4", "chr5", "chr7", "chr9", "chr10", "chr11",
 	"chr21", "chr22", "chrX", "chrY"]
 
 validation_chroms = ['chr8', 'chr20']
+
+# Held out of both lists above, and scored once after training to give a
+# performance estimate that did not take part in choosing the checkpoint.
+test_chroms = ['chr1', 'chr3', 'chr6']
 
 
 default_fit_parameters = {
@@ -79,9 +83,12 @@ default_fit_parameters = {
 	'devices': 1,
 	'progress_bar': None,
 	'early_stopping': None,
+	'compile': True,
+	'compile_mode': 'max-autotune',
 	'verbose': False,
 	'training_chroms': training_chroms,
 	'validation_chroms': validation_chroms,
+	'test_chroms': test_chroms,
 	'sequences': None,
 	'loci': None,
 	'exclusion_lists': None,
@@ -89,7 +96,6 @@ default_fit_parameters = {
 	'signals': None,
 	'controls': None,
 	'random_state': 0,
-	'performance_filename': 'performance.tsv',
 	'skip': False,
 }
 
@@ -101,11 +107,13 @@ default_evaluate_parameters = {
 	'verbose': False,
 	'chroms': validation_chroms,
 	'reverse_complement_average': False,
+	'summits': False,
 	'device': 'cuda',
 	'dtype': 'float32',
 	'exclusion_lists': None,
 	'sequences': None,
 	'loci': None,
+	'signals': None,
 	'controls': None,
 	'model': None,
 	'compile': True,
@@ -148,7 +156,6 @@ default_seqlet_parameters = {
 	'max_seqlet_len': 25,
 	'additional_flanks': 3,
 	'chroms': training_chroms + validation_chroms,
-	'exclusion_lists': None,
 	'verbose': False,
 	'loci': None,
 	'ohe_filename': None,
@@ -270,6 +277,7 @@ default_pipeline_parameters = {
 		'loss_weights': None,
 		'training_chroms': training_chroms,
 		'validation_chroms': validation_chroms,
+		'test_chroms': test_chroms,
 		'sequences': None,
 		'loci': None,
 		'negatives': None,
@@ -278,7 +286,6 @@ default_pipeline_parameters = {
 		'verbose': None,
 		'random_state': None,
 		'summits': False,
-		'performance_filename': None,
 	},
 
 	# Attribution parameters

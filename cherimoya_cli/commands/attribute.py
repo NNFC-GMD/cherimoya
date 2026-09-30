@@ -5,7 +5,6 @@
 def run(args):
 
 	import numpy
-	import torch
 
 	from tangermeme.deep_lift_shap import deep_lift_shap
 	from tangermeme.io import extract_loci
@@ -53,6 +52,7 @@ def run(args):
 		chroms=parameters["chroms"],
 		in_window=parameters["in_window"],
 		max_jitter=0,
+		exclusion_lists=parameters["exclusion_lists"],
 		ignore=list("QWERYUIOPSDFHJKLZXVBNM"),
 		return_mask=True,
 		verbose=parameters["verbose"],

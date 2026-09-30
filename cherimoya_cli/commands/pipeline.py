@@ -50,7 +50,6 @@ def _validate_inputs(parameters):
 def run(args):
 	import argparse
 	import json
-	import os
 	import subprocess
 	import sys
 
@@ -74,12 +73,21 @@ def run(args):
 	from ..utils import _extract_set, _check_set, merge_parameters
 
 	parameters = merge_parameters(args.parameters, default_pipeline_parameters)
+	if parameters["skip"]:
+		return
+
 	preprocess_parameters = merge_parameters(
 		parameters["preprocessing_parameters"],
 		default_pipeline_parameters["preprocessing_parameters"],
 	)
 
 	_validate_inputs(parameters)
+
+	# The negatives step reads the first peak file, which for a bare string
+	# would be its first character.
+	for key in ("loci", "negatives"):
+		if isinstance(parameters[key], str):
+			parameters[key] = [parameters[key]]
 
 	pname = parameters["name"]
 
@@ -88,8 +96,8 @@ def run(args):
 	# the underlying files regardless of how they're grouped for the
 	# model. The downstream fit step receives the *original* grouped
 	# form via the pipeline JSON, so grouping is preserved end-to-end.
-	signal_files, signal_groups = normalize_signal_groups(parameters["signals"])
-	control_files, control_groups = normalize_signal_groups(parameters["controls"])
+	signal_files, _ = normalize_signal_groups(parameters["signals"])
+	control_files, _ = normalize_signal_groups(parameters["controls"])
 
 	def _run_step(cmd_fn, json_path):
 		"""Invoke a CLI step in-process by calling its run(args) directly."""
@@ -277,7 +285,6 @@ def run(args):
 	if parameters.get("model", None) == None:
 		name = pname + ".fit.json"
 		parameters["model"] = pname + ".torch"
-		_check_set(fit_parameters, "performance_filename", pname + ".performance.tsv")
 
 		with open(name, "w") as outfile:
 			outfile.write(json.dumps(fit_parameters, sort_keys=True, indent=4))
@@ -351,7 +358,7 @@ def run(args):
 		annotation_parameters, default_annotation_parameters
 	)
 
-	if annotation_parameters["motifs"] is not None:
+	if annotation_parameters["motifs"] is not None and not annotation_parameters["skip"]:
 		if parameters["verbose"]:
 			print("\nStep 3.2: Seqlet annotation")
 
@@ -474,10 +481,13 @@ def run(args):
 		parameters, default_marginalize_parameters, "marginalize_parameters"
 	)
 
-	_check_set(marginalize_parameters, "loci", parameters["negatives"])
+	# The motifs are inserted into background loci. `_extract_set` has
+	# already copied the top-level `loci`, the peaks, so the negatives are
+	# set here unless the step names its own loci.
+	marginalize_parameters["loci"] = (
+		parameters["marginalize_parameters"]["loci"] or parameters["negatives"])
 	_check_set(marginalize_parameters, "output_filename", pname + "_marginalize/")
 	_check_set(marginalize_parameters, "motifs", parameters["motifs"])
-	_check_set(marginalize_parameters, "negatives", parameters["negatives"])
 
 	name = "{}.marginalize.json".format(parameters["name"])
 

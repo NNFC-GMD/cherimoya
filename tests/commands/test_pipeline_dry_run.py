@@ -62,3 +62,37 @@ def test_dry_run_attribute_json_uses_deep_lift_shap_settings(tmp_path,
 	assert step["random_state"] == 0
 	# The top-level `compile: true` is not inherited.
 	assert step["compile"] is False
+
+
+def test_dry_run_marginalizes_over_the_negatives(tmp_path, run_pipeline):
+	"""Motifs are inserted into background loci: the negatives, unless the
+	step names its own. The top-level `loci` are the peaks."""
+
+	import json
+
+	run_pipeline(motifs=str(tmp_path / "m.meme"))
+	with open(tmp_path / "demo.marginalize.json") as f:
+		assert json.load(f)["loci"] == [str(tmp_path / "n.bed")]
+
+	run_pipeline(motifs=str(tmp_path / "m.meme"),
+		marginalize_parameters={"loci": str(tmp_path / "x.bed")})
+	with open(tmp_path / "demo.marginalize.json") as f:
+		assert json.load(f)["loci"] == str(tmp_path / "x.bed")
+
+
+def test_pipeline_accepts_a_single_peak_file_as_a_string(tmp_path,
+		run_pipeline):
+	"""`loci` may be a bare path. The negatives step takes the first peak
+	file, which for a string used to be its first character."""
+
+	from unittest import mock
+
+	with mock.patch("subprocess.run"), \
+			mock.patch("cherimoya_cli.commands.negatives.run") as negatives_run, \
+			mock.patch("cherimoya_cli.commands.fit.run"), \
+			mock.patch("cherimoya_cli.commands.attribute.run"), \
+			mock.patch("cherimoya_cli.commands.seqlets.run"):
+		run_pipeline(loci=str(tmp_path / "x.bed"), negatives=None,
+			dry_run=False)
+
+	assert negatives_run.call_args.args[0].peaks == str(tmp_path / "x.bed")

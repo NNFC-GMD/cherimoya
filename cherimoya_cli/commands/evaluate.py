@@ -8,11 +8,13 @@ def run(args):
 
 	from sklearn.metrics import average_precision_score
 	from sklearn.metrics import roc_auc_score
+	from tangermeme.io import _interleave_loci
 	from tangermeme.io import extract_loci
 	from tangermeme.predict import predict
 
 	from cherimoya import Cherimoya
 	from cherimoya import ControlWrapper
+	from cherimoya.io import channel_permutation_from_groups
 	from cherimoya.io import normalize_signal_groups
 	from cherimoya.performance import calculate_performance_measures
 	from ..defaults import default_evaluate_parameters
@@ -27,7 +29,7 @@ def run(args):
 	# (recovered below from the loaded checkpoint) drives count pooling
 	# under calculate_performance_measures.
 	signal_files, signal_groups = normalize_signal_groups(parameters["signals"])
-	control_files, _ = normalize_signal_groups(parameters["controls"])
+	control_files, control_groups = normalize_signal_groups(parameters["controls"])
 	parameters["signals"] = signal_files
 	parameters["controls"] = control_files
 
@@ -57,6 +59,14 @@ def run(args):
 		compile=parameters["compile"],
 		compile_mode=parameters["compile_mode"])
 
+	# `extract_loci` raises when no locus falls on `chroms`, so that case
+	# is checked first, for the loci here and for the negatives below.
+	if len(_interleave_loci(parameters["loci"], parameters["chroms"])) == 0:
+		print("No loci on chromosomes {}, so {} was not written.".format(
+			parameters["chroms"], parameters["performance_filename"]))
+		return
+
+	# Centered as the training peaks are; negatives have no summit column.
 	examples = extract_loci(
 		sequences=parameters["sequences"],
 		signals=parameters["signals"],
@@ -66,6 +76,7 @@ def run(args):
 		in_window=parameters["in_window"],
 		out_window=parameters["out_window"],
 		exclusion_lists=parameters["exclusion_lists"],
+		summits=parameters["summits"],
 		max_jitter=0,
 		ignore=list("QWERYUIOPSDFHJKLZXVBNM"),
 		verbose=parameters["verbose"],
@@ -74,7 +85,9 @@ def run(args):
 	# The negatives follow the peaks, which are the first `n_peaks` rows.
 	# The key is optional, so that JSONs written before it still run.
 	n_peaks = len(examples[0])
-	if parameters.get("negatives") is not None:
+	negatives = parameters.get("negatives")
+	if negatives is not None and len(_interleave_loci(negatives,
+		parameters["chroms"])) > 0:
 		negatives = extract_loci(
 			sequences=parameters["sequences"],
 			signals=parameters["signals"],
@@ -110,8 +123,15 @@ def run(args):
 	)
 
 	if parameters["reverse_complement_average"]:
+		# The reverse complement swaps the strands within each group but
+		# keeps the groups in order, as it does in training.
+		signal_perm = channel_permutation_from_groups(model.signal_groups)
+
 		X_rc = torch.flip(X, dims=(-1, -2))
-		X_ctl_rc = None if X_ctl is None else (torch.flip(X_ctl[0], dims=(-1, -2)),)
+		X_ctl_rc = None
+		if X_ctl is not None:
+			control_perm = channel_permutation_from_groups(control_groups)
+			X_ctl_rc = (X_ctl[0][:, control_perm].flip(-1),)
 
 		y_hat_logits_rc, y_hat_logcounts_rc = predict(
 			model,
@@ -123,7 +143,7 @@ def run(args):
 			verbose=parameters["verbose"],
 		)
 
-		y_hat_logits_rc = torch.flip(y_hat_logits_rc, dims=(-1, -2))
+		y_hat_logits_rc = y_hat_logits_rc[:, signal_perm].flip(-1)
 		y_hat_logits = (y_hat_logits + y_hat_logits_rc) / 2
 		y_hat_logcounts = (y_hat_logcounts + y_hat_logcounts_rc) / 2
 

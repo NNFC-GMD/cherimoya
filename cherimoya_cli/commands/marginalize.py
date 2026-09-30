@@ -5,7 +5,6 @@
 def run(args):
 
 	import numpy
-	import torch
 
 	from bpnetlite.marginalize import marginalization_report
 	from tangermeme.io import extract_loci
@@ -38,7 +37,9 @@ def run(args):
 		sequences=parameters["sequences"],
 		loci=parameters["loci"],
 		chroms=parameters["chroms"],
+		in_window=parameters["in_window"],
 		max_jitter=0,
+		exclusion_lists=parameters["exclusion_lists"],
 		ignore=list("QWERYUIOPSDFHJKLZXVBNM"),
 		n_loci=extract_n_loci,
 		verbose=parameters["verbose"],
