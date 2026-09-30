@@ -50,8 +50,8 @@ _PRECISION = {
 }
 
 # The columns of the training log, `{name}.log`, which is also the table
-# printed under `verbose`. `{name}.detailed.log` adds a profile and a count
-# Pearson column per signal group.
+# printed under `verbose`. `{name}.detailed.log` adds a profile Pearson, count
+# Pearson, AUROC and AUPRC column per signal group.
 _LOG_COLUMNS = ["Epoch", "Iteration", "Training Time", "Validation Time",
 	"Training MNLL", "Training Count MSE", "Validation MNLL",
 	"Validation Profile Pearson", "Validation Count Pearson",
@@ -237,9 +237,11 @@ class CherimoyaModule(lightning.LightningModule):
 		Steps of linear learning-rate warmup, from 1% of each rate. Default
 		is 0.
 
-	n_decay_steps: int, optional
+	n_decay_steps: int or None, optional
 		Steps of cosine decay for the Muon and AdamW rates after warmup.
-		The `lw` rate is held constant instead. Default is 1.
+		Past it the cosine rises again. If None, the decay spans the rest
+		of the run, Lightning's estimate of its steps less the warmup. The
+		`lw` rate is held constant instead. Default is None.
 
 	muon_lr, muon_wd: float, optional
 		Muon learning rate and weight decay. Defaults are 0.025 and 0.03.
@@ -270,7 +272,7 @@ class CherimoyaModule(lightning.LightningModule):
 
 	def __init__(self, model, training_data, X_valid, y_valid,
 		X_ctl_valid=None, labels_valid=None, batch_size=64, num_workers=1,
-		n_warmup_steps=0, n_decay_steps=1, muon_lr=0.025, muon_wd=0.03,
+		n_warmup_steps=0, n_decay_steps=None, muon_lr=0.025, muon_wd=0.03,
 		adam_lr=0.001, adam_wd=0.0, lw_lr=0.001, lw_wd=0.0, lw_momentum=0.9,
 		loss_weights=None, ema_decay=0.999, verbose=False):
 		super().__init__()
@@ -347,8 +349,13 @@ class CherimoyaModule(lightning.LightningModule):
 			return SequentialLR(optimizer, schedulers=[warmup, after(optimizer)],
 				milestones=[self.n_warmup_steps])
 
+		n_decay_steps = self.n_decay_steps
+		if n_decay_steps is None:
+			n_decay_steps = max(1, self.trainer.estimated_stepping_batches
+				- self.n_warmup_steps)
+
 		def cosine(optimizer):
-			return CosineAnnealingLR(optimizer, T_max=self.n_decay_steps,
+			return CosineAnnealingLR(optimizer, T_max=n_decay_steps,
 				eta_min=1e-5)
 
 		# The Kendall weights are warmed up but not decayed.
@@ -370,6 +377,19 @@ class CherimoyaModule(lightning.LightningModule):
 		if self.trainer.world_size > 1:
 			import torch._dynamo
 			torch._dynamo.config.optimize_ddp = False
+
+			# Each rank must draw the same epochs to take its slice of them.
+			# An unseeded sampler draws its own seed on every rank, so rank
+			# 0's is used everywhere. Epochs are prepared lazily, so none
+			# has been drawn from the old seed yet.
+			if hasattr(self.training_data, "_base_seed"):
+				self.training_data._base_seed = self.trainer.strategy.broadcast(
+					self.training_data._base_seed, src=0)
+
+			if len(self.X_valid) < self.trainer.world_size:
+				raise ValueError("The validation set has {} examples, fewer "
+					"than the {} devices, each of which validates a block of "
+					"it.".format(len(self.X_valid), self.trainer.world_size))
 
 	def on_fit_start(self):
 		self.ema = EMA(self.model, decay=self.ema_decay)
@@ -749,6 +769,10 @@ def fit(model, training_data, X_valid, y_valid, X_ctl_valid=None,
 
 	module = CherimoyaModule(model, training_data, X_valid, y_valid,
 		X_ctl_valid=X_ctl_valid, verbose=verbose, **kwargs)
+
+	if len(X_valid) == 0:
+		raise ValueError("The validation set is empty, so no checkpoint could "
+			"be chosen.")
 
 	if len(training_data) < module.batch_size:
 		raise ValueError("The training set has {} examples, fewer than one "
