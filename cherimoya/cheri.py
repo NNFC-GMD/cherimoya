@@ -143,11 +143,12 @@ if HAS_TRITON:
 		num_stages = [2, 3, 4, 5]
 		configs = []
 
+		# Launch options, not kernel arguments: in the kwargs dict they are
+		# overridden by the Config's own defaults, so every config was the
+		# same.
 		for num_warp, num_stage in itertools.product(num_warps, num_stages):
-			configs.append(triton.Config({
-				'num_warps': num_warp,
-				'num_stages': num_stage,
-			}))
+			configs.append(triton.Config({}, num_warps=num_warp,
+				num_stages=num_stage))
 
 		return configs
 
@@ -785,6 +786,8 @@ if HAS_TRITON:
 		fp32:      materialize y as bf16 (3 fp32 X re-reads exceed the
 		           savings)."""
 
+		# The kernels index memory as contiguous; see fused_dilated_conv_norm.
+		X = X.contiguous()
 		recompute_conv = (X.dtype != torch.float32)
 		y, mean, rstd = _fwd_inf_run_stats(X, conv_w, dilation,
 			write_y=not recompute_conv)
@@ -816,8 +819,10 @@ def fused_dilated_conv_norm(x, w, dilation):
 		The convolved and normalized output.
 	"""
 
+	# The kernel indexes memory as contiguous and reads the wrong elements
+	# of any other layout. `.contiguous()` is free when it already is.
 	if HAS_TRITON and x.is_cuda:
-		return FusedDilatedConvNormFunc.apply(x, w, dilation)
+		return FusedDilatedConvNormFunc.apply(x.contiguous(), w, dilation)
 	return _cheri_conv_norm_cpu(x, w, dilation)
 
 
@@ -1087,23 +1092,31 @@ class CheriBlock(torch.nn.Module):
 		``Tensor._version`` advances on every in-place write that does
 		not go through ``.data`` — an optimizer step, a hand-edited
 		weight, an EMA swap — so comparing it is how ``_cast_weights``
-		tells a live cache from a stale one.
+		tells a live cache from a stale one. Weights created under
+		``torch.inference_mode()`` have no version counter; for them this
+		returns None, so the cache counts as current, and an in-place edit
+		made inside inference mode is not seen.
 		"""
 
-		return (self.linear1.weight._version, self.linear2.weight._version)
+		w1, w2 = self.linear1.weight, self.linear2.weight
+		if w1.is_inference() or w2.is_inference():
+			return None
+		return (w1._version, w2._version)
 
 	def _can_use_inference_path(self, X):
 		"""Return True iff the no_grad fused inference kernel can be used
 		for this input. Requires CUDA + Triton, gradients to be disabled,
-		and the MLP hidden width to be a multiple of 16 (the smallest
-		BLOCK_HK value the kernel autotunes over). Any other case falls
-		back to the existing path, which is bit-identical to before."""
+		the MLP hidden width to be a multiple of 16 (the smallest BLOCK_HK
+		value the kernel autotunes over), and at least 16 filters (Triton's
+		smallest reduction width for a dot). Any other case falls back to
+		the existing path, which is bit-identical to before."""
 
 		hidden = self.expansion * self.n_filters
 		return (HAS_TRITON
 			and X.is_cuda
 			and not torch.is_grad_enabled()
-			and hidden % 16 == 0)
+			and hidden % 16 == 0
+			and self.n_filters >= 16)
 
 	def _cast_weights(self, X):
 		"""Return the MLP weights cast to the dot dtype, with
