@@ -91,8 +91,9 @@ pointers.
      - Shift applied to - strand reads (bp). Default 0.
    * - ``-m, --motifs``
      - path
-     - MEME-format motif database. When set, TF-MoDISco report,
-       tomtom-lite annotation, and marginalization are run.
+     - MEME-format motif database. When set, tomtom-lite annotation
+       and marginalization run, and the TF-MoDISco report, which runs
+       either way, matches its patterns against it.
    * - ``-o, --output``
      - path (required)
      - Output JSON path.
@@ -663,7 +664,8 @@ CLI flags:
 
 * ``-p, --parameters`` (required) — path to a fit JSON.
 
-JSON schema: the ``fit_parameters`` table above, plus the input
+JSON schema: the ``fit_parameters`` table above, plus ``name``
+(required: the path prefix of every file ``fit`` writes), the input
 keys ``sequences``, ``loci``, ``negatives``, ``signals``,
 ``controls`` and ``exclusion_lists``, and ``compile`` /
 ``compile_mode`` (defaults ``true`` / ``"max-autotune"``), which

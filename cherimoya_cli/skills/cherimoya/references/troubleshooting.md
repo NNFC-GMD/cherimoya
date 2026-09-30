@@ -67,23 +67,21 @@ separately. Nothing to fix.
 ## "Training loss is NaN"
 
 By likelihood:
-1. **A peak with zero counts** makes the multinomial log-likelihood `-inf`. The
-   `min_counts`/`max_counts` filters are `PeakGenerator` arguments **not exposed
-   through the CLI JSON**, so the CLI fix is to **remove empty/zero-count peaks
-   from the peak BED upstream** before training. (`min_counts` is only reachable
-   by writing a custom Python loop with `cherimoya.io.PeakGenerator`.)
-2. **Mismatched strand counts** — stranded data passed flat (or unstranded data
-   as a pair) gives `y` the wrong shape. Set `verbose=true` and check the
-   train/validation shapes printed at startup. Confirm a stranded `(+, -)` pair
+1. **Mismatched strand counts** — stranded data passed flat (or unstranded data
+   as a pair) gives `y` the wrong shape. Compare the number of signal files with
+   the grouping the user intends. Confirm a stranded `(+, -)` pair
    is nested (`[["plus.bw","minus.bw"]]`), not flat (see
    `references/input-files.md`).
+2. **bf16 overflow in the count head** — with `dtype: "bfloat16"` and very large
+   per-locus counts. Rerun in `float32` to confirm; if that fixes it, scale the
+   signal down with `preprocessing_parameters.scale_factor`.
 
 ## "Stranded predictions come almost entirely from one strand"
 
 A stranded `(+, -)` model (TF ChIP, PRO-cap, etc.) whose reconstructed
 `ExpectedCountsWrapper` profile has nearly all its signal on one strand,
 even though the observed data has comparable coverage on both (offset by
-~100-300 bp). Fixed in the **Unreleased** release: the profile loss now
+~100-300 bp). Fixed in v0.2.0: the profile loss now
 normalizes each signal group's channels **jointly** (one multinomial over
 both strands + length) instead of per-strand, so the strand balance is
 trained. Models trained with an older release have an uncalibrated
@@ -146,7 +144,7 @@ model = Cherimoya.load("checkpoint.torch", device="cuda",
 For fastest inference, call `model.eval()` before predicting so the megakernel
 reuses its bf16 weight cast.
 
-## "Cherimoya.load rejects a checkpoint" (`KeyError: 'config'` or a `weights_only` `RuntimeError`)
+## "Cherimoya.load rejects a checkpoint" (`KeyError: 'config'` or `UnpicklingError: Weights only load failed`)
 
 The checkpoint was saved with the legacy `torch.save(model, ...)` path from
 before v0.1.0. It's not loadable by the current config-plus-state-dict loader;
