@@ -62,7 +62,7 @@ weights, which validates better than the raw training weights):
 |---|---|
 | `{name}_peaks.narrowPeak` | Peaks MACS3 called (when you didn't supply peaks). |
 | `{name}.negatives.bed` | GC-matched background regions (when you didn't supply negatives). |
-| `{name}.+.bw` / `{name}.-.bw` / `{name}.bw` | bigWig coverage `bam2bw` made (stranded pair / unstranded). |
+| `{name}.+.bw` / `{name}.-.bw` / `{name}.bw` | bigWig coverage `figwig bam2bw` made (stranded pair / unstranded). |
 | `{name}.control.*.bw` | Same, for controls. |
 
 ## "What did the model learn?" — interpretation outputs

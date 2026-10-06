@@ -18,6 +18,7 @@ All map to `pipeline-json` flags and to `preprocessing_parameters` in the JSON.
 | `-ps N` | `pos_shift` | Shift `+` strand reads by N bp. |
 | `-ns N` | `neg_shift` | Shift `-` strand reads by N bp. |
 | `-sf X` | `scale_factor` | Multiply raw counts by X (default 1 = no scaling). |
+| — | `n_jobs` | Cores `figwig bam2bw` uses to convert reads (default 8; `-1` = every CPU). |
 | — | `callpeaks_gsize` | MACS3 effective genome size: `"hs"` human, `"mm"` mouse. |
 | — | `callpeaks_q` | MACS3 q-value cutoff (default 0.05). Loosen to 0.1 for low-yield; tighten to 0.01 for high-confidence. |
 
@@ -39,7 +40,7 @@ These are *not* interchangeable and depend only on the file, not the assay:
 
 Why (from the pipeline source):
 - **`-f` (fragments)** is what routes a fragment file correctly: MACS3 uses
-  `FRAG` format and `bam2bw` parses fragment intervals rather than reads.
+  `FRAG` format and `figwig bam2bw` parses fragment intervals rather than reads.
 - **`-pe` (paired-end)** exists *only* to switch MACS3 to `BAMPE` for a
   paired-end **BAM of reads**. A fragment file is already `FRAG`, so **`-pe` has
   no effect on fragments** — don't add it there.

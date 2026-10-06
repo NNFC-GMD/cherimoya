@@ -172,11 +172,13 @@ Tn5 transposase / +4 / −4 shift
    Tn5 *cut*, which is the biologically meaningful event, rather than
    where the read aligns.
 
-bam2bw
-   The streaming BAM/SAM/fragment-file → bigWig converter used by
-   the Cherimoya pipeline. It reads the input file (local or remote),
-   counts reads (or fragments, with optional shifts) into per-base
-   coverage bins, and emits one or two bigWig files (stranded or
-   unstranded). Cherimoya invokes it automatically when a pipeline
-   step receives BAM/SAM/fragment input; it can also be used
-   standalone.
+figwig (``figwig bam2bw``)
+   The streaming BAM/SAM/fragment-file → bigWig converter used by the
+   Cherimoya pipeline, a command of the `figwig
+   <https://github.com/jmschrei/figwig>`_ package that takes the
+   arguments of the earlier ``bam2bw`` tool. It reads the input file
+   (local or remote), counts reads (or fragments, with optional
+   shifts) into per-base coverage bins, and emits one or two bigWig
+   files (stranded or unstranded). Cherimoya invokes it automatically
+   when a pipeline step receives BAM/SAM/fragment input; it can also
+   be used standalone.

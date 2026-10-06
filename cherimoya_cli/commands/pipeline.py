@@ -92,7 +92,7 @@ def run(args):
 	pname = parameters["name"]
 
 	# Flatten any grouped signals/controls early — every preprocessing
-	# step (MACS3 callpeak, bam2bw, file-extension sniffing) operates on
+	# step (MACS3 callpeak, figwig bam2bw, file-extension sniffing) operates on
 	# the underlying files regardless of how they're grouped for the
 	# model. The downstream fit step receives the *original* grouped
 	# form via the pipeline JSON, so grouping is preserved end-to-end.
@@ -167,6 +167,7 @@ def run(args):
 			print("Step 0.2: Convert data to bigWigs")
 
 		cmd_args = [
+			"figwig",
 			"bam2bw",
 			"-s",
 			parameters["sequences"],
@@ -179,7 +180,7 @@ def run(args):
 			"-sf",
 			str(preprocess_parameters["scale_factor"]),
 			"-p",
-			"-1",
+			str(preprocess_parameters["n_jobs"]),
 		]
 
 		if preprocess_parameters["read_depth"]:
@@ -200,8 +201,8 @@ def run(args):
 
 		# After conversion, rewrite `signals` in the grouped form so the
 		# downstream fit JSON declares strandedness correctly. Unstranded
-		# bam2bw produces one bigWig — one unstranded group. Stranded
-		# bam2bw produces a (+, -) pair which must be wrapped in an
+		# figwig bam2bw produces one bigWig — one unstranded group. Stranded
+		# figwig bam2bw produces a (+, -) pair which must be wrapped in an
 		# inner list to land as a single stranded group.
 		if preprocess_parameters["unstranded"]:
 			parameters["signals"] = [pname + ".bw"]
@@ -211,6 +212,7 @@ def run(args):
 	if control_files is not None:
 		if control_files[0].endswith(ftypes):
 			cmd_args = [
+				"figwig",
 				"bam2bw",
 				"-s",
 				parameters["sequences"],
@@ -221,7 +223,7 @@ def run(args):
 				"-ns",
 				str(preprocess_parameters["neg_shift"]),
 				"-p",
-				"-1",
+				str(preprocess_parameters["n_jobs"]),
 			]
 
 			if preprocess_parameters["read_depth"]:

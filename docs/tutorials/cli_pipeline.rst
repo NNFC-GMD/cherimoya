@@ -34,7 +34,7 @@ You will need:
   one, the pipeline samples them automatically.
 
 All file inputs can be remote URLs (``http://``, ``https://``,
-``s3://``, ``gs://``). ``bam2bw`` streams the data directly without
+``s3://``, ``gs://``). ``figwig bam2bw`` streams the data directly without
 downloading the file first; the validation step before the run only
 checks paths that look local.
 
@@ -111,7 +111,7 @@ is then the global batch, split evenly across them (see
 What this does, in order:
 
 1. **MACS3 peak calling** (skipped if ``loci`` is set).
-2. **bam2bw conversion** to bigWig (skipped if signals are already
+2. **figwig bam2bw conversion** to bigWig (skipped if signals are already
    bigWigs).
 3. **GC-matched negative sampling** (skipped if ``negatives`` is set).
 4. **Model training** — writes ``{name}.torch`` (best checkpoint by
@@ -165,25 +165,29 @@ The ``fit``, ``evaluate``, ``attribute``, ``seqlets`` and
 step.
 
 
-About bam2bw
-------------
+About figwig bam2bw
+-------------------
 
 The pipeline does not call BAM/SAM/fragment files directly into the
 training step — it converts them to bigWig first using the
-``bam2bw`` tool, which is a hard dependency. ``bam2bw`` streams the
+``figwig bam2bw`` command, from the `figwig
+<https://github.com/jmschrei/figwig>`_ package, which is a hard
+dependency. ``figwig bam2bw`` streams the
 input (local or remote URL), counts reads or fragments into per-base
 coverage, optionally applies a ± shift (used for Tn5 / DNase
 corrections), and emits one bigWig (unstranded) or two bigWigs
 (``+`` / ``-`` stranded).
 
-This conversion is what enables remote URLs as inputs: ``bam2bw``
+This conversion is what enables remote URLs as inputs: ``figwig bam2bw``
 fetches reads via byte-range requests rather than downloading the
 whole file. The resulting bigWigs are written into the working
-directory and re-used by every downstream stage.
+directory and re-used by every downstream stage. It runs on
+``preprocessing_parameters.n_jobs`` cores, 8 by default.
 
 If your signals are already bigWigs, the pipeline skips this step
-automatically. To use ``bam2bw`` standalone (outside the pipeline),
-invoke it directly — see its own documentation.
+automatically. To use ``figwig bam2bw`` standalone (outside the
+pipeline), invoke it directly — see `its documentation
+<https://figwig.readthedocs.io/en/latest/bam2bw.html>`_.
 
 
 Calling negatives independently
@@ -270,11 +274,11 @@ directory (with ``{name}`` from the ``-n`` flag in step 1):
        Spearman and MSE over peaks and negatives, and the AUROC and
        AUPRC.
    * - ``{name}.+.bw`` / ``{name}.-.bw``
-     - bigWigs produced by ``bam2bw`` for the stranded signal.
+     - bigWigs produced by ``figwig bam2bw`` for the stranded signal.
    * - ``{name}.bw``
-     - bigWig produced by ``bam2bw`` for unstranded signal.
+     - bigWig produced by ``figwig bam2bw`` for unstranded signal.
    * - ``{name}.control.{+,-}.bw``
-     - bigWigs produced by ``bam2bw`` for stranded controls.
+     - bigWigs produced by ``figwig bam2bw`` for stranded controls.
    * - ``{name}_peaks.narrowPeak``
      - Peaks called by MACS3 (when ``loci`` not provided).
    * - ``{name}.negatives.bed``

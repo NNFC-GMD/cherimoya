@@ -120,7 +120,7 @@ inline and write no snapshot.
 | Step | Runs when | Produces |
 |---|---|---|
 | 0.1 MACS3 peak calling | `loci` is `null` | `{name}_peaks.narrowPeak` |
-| 0.2 `bam2bw` signal → bigWig | signals aren't already bigWig (`.sam/.bam/.bed[.gz]/.tsv[.gz]`) | `{name}.+.bw`/`{name}.-.bw` (stranded) or `{name}.bw` (unstranded); controls → `{name}.control.*.bw` |
+| 0.2 `figwig bam2bw` signal → bigWig | signals aren't already bigWig (`.sam/.bam/.bed[.gz]/.tsv[.gz]`) | `{name}.+.bw`/`{name}.-.bw` (stranded) or `{name}.bw` (unstranded); controls → `{name}.control.*.bw` |
 | 0.3 negative sampling | `negatives` is `null` | `{name}.negatives.bed` |
 | 1 train | always (unless `model` set) | `{name}.torch`, `{name}.final.torch`, `{name}.log`, `{name}.detailed.log`, `{name}.{validation,test}.performance.tsv` |
 | 2 attribute (DeepLIFT/SHAP) | always | `{name}.attributions.{ohe,attr}.npz`, `{name}.attributions.idxs.npy` |

@@ -108,7 +108,7 @@ cherimoya pipeline-json \
     -ps 4 -ns -4 -u -pe
 ```
 
-Any input path can be remote (S3, HTTPS, etc.); the pipeline streams reads through `bam2bw` directly.
+Any input path can be remote (S3, HTTPS, etc.); the pipeline streams reads through `figwig bam2bw` directly.
 
 **Step 2: edit the JSON if you want to override defaults** — model width, training/validation chromosomes, seqlet p-value threshold, MoDISco settings, anything. Then run:
 

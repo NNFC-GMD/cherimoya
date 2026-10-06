@@ -147,8 +147,8 @@ Run as:
 
 Pipeline JSON (you have BAMs and want Cherimoya to call peaks,
 convert to bigWig, sample negatives, and train in one command).
-``preprocessing_parameters.unstranded`` is ``true`` so ``bam2bw``
-emits a single ``.bw`` file:
+``preprocessing_parameters.unstranded`` is ``true`` so
+``figwig bam2bw`` emits a single ``.bw`` file:
 
 .. code-block:: json
 
@@ -238,7 +238,7 @@ not what you want for a stranded experiment — the ``+`` / ``-``
 swap on RC depends on knowing the two files are paired.
 
 Pipeline JSON (BAMs). ``preprocessing_parameters.unstranded`` is
-``false``, so ``bam2bw`` emits the ``+`` / ``-`` pair and the
+``false``, so ``figwig bam2bw`` emits the ``+`` / ``-`` pair and the
 pipeline rewrites ``signals`` to the nested form above before
 calling fit:
 
@@ -362,8 +362,8 @@ default is ``0``.
 .. admonition:: BAM input for variably-multitask
    :class: note
 
-   The ``cherimoya pipeline`` BAM-to-bigWig preprocessing step
-   applies a single set of ``bam2bw`` flags (``unstranded``,
+   The ``cherimoya pipeline`` BAM-to-bigWig preprocessing step applies
+   a single set of ``preprocessing_parameters`` (``unstranded``,
    ``fragments``, ``paired_end``, ``pos_shift``, ``neg_shift``) to
    every input file in one batch. Mixing modalities — for example,
    paired-end unstranded ATAC alongside single-end stranded ChIP —

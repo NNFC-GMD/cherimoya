@@ -58,8 +58,8 @@ Flag-by-flag:
 If your input is already a fragments TSV/BED (e.g. from
 ``snap-atac``, ``CellRanger``, or a custom ``samtools`` pipeline),
 pass the fragment file with ``-i``, add ``-f`` to indicate that the
-file is a fragment file, and drop ``-pe``; ``bam2bw`` detects the file 
-extension and handles the fragment file format.
+file is a fragment file, and drop ``-pe``; ``figwig bam2bw`` detects
+the file extension and handles the fragment file format.
 
 
 Run the pipeline
@@ -73,7 +73,7 @@ The steps mirror the ChIP-seq recipe, with these differences:
 
 * MACS3 runs without a control file and with format ``BAMPE`` (or
   ``FRAG`` for fragment-file input).
-* ``bam2bw`` is invoked with the ``-u`` (unstranded) and ``-ps 4
+* ``figwig bam2bw`` is invoked with the ``-u`` (unstranded) and ``-ps 4
   -ns -4`` flags, plus ``-f`` for fragment-file input, producing a
   single ``atac_experiment.bw`` rather than ``+.bw`` / ``-.bw`` pair.
 * The trained Cherimoya model has ``signal_groups=[1]`` (one

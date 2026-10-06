@@ -36,7 +36,7 @@ set it directly in the JSON to mask regions (e.g. ENCODE blacklist).
 ### Signal — `signals`
 The measured coverage the model learns to predict. Two forms:
 - **Aligned reads / fragments: `.bam`, `.sam`, `.bed`, `.bed.gz`, `.tsv`,
-  `.tsv.gz`** — converted to bigWig by `bam2bw` (step 0.2). Fragment files
+  `.tsv.gz`** — converted to bigWig by `figwig bam2bw` (step 0.2). Fragment files
   (10x-style) need the `-f`/`fragments` flag.
 - **Coverage tracks: `.bw`, `.bigwig`** — already processed; used directly,
   conversion skipped.
@@ -50,7 +50,7 @@ Confirm with the user:
   track); many TF/initiation assays are stranded (`+`/`-` pair). Decides `-u`
   and the grouping (below). See `references/assay-defaults.md`.
 - **Replicates?** How they combine depends on input type. **BAM/SAM/fragment**
-  replicates passed as multiple `-i` are merged into one bigWig by `bam2bw` (one
+  replicates passed as multiple `-i` are merged into one bigWig by `figwig bam2bw` (one
   pooled track). **Pre-made bigWig** replicates are *not* pooled — a flat list is
   read as N independent unstranded groups (see the grouping footgun below), so
   pool them upstream first. (Peak calling pools all replicates as MACS3
@@ -111,6 +111,6 @@ header comment in `cherimoya_cli/defaults.py`.
 ## Remote files
 
 Any path can be a remote URL (`http://`, `https://`, `s3://`, `gs://`); the
-pipeline streams it via `bam2bw` / `tangermeme.io` without downloading, and the
+pipeline streams it via `figwig bam2bw` / `tangermeme.io` without downloading, and the
 pre-flight check skips it. Credentialed buckets need the usual environment
 variables (`AWS_*`, `GOOGLE_APPLICATION_CREDENTIALS`) set first.
