@@ -59,7 +59,7 @@ Steps invoked, in order:
 
 1. MACS3 peak calling on the BAM with no controls (output:
    ``dnase_experiment_peaks.narrowPeak``).
-2. ``bam2bw`` converts the BAM to an unstranded bigWig
+2. ``figwig bam2bw`` converts the BAM to an unstranded bigWig
    (``dnase_experiment.bw``).
 3. GC-matched negative sampling (``dnase_experiment.negatives.bed``).
 4. Train a 9-layer 128-filter Cherimoya model with

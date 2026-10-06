@@ -120,7 +120,7 @@ is bit-identical for single-channel groups). See the CHANGELOG entry
 - Wrong auto-detected format → set `preprocessing_parameters.callpeaks_format`
   explicitly (e.g. `BAMPE` for paired-end).
 
-## "bam2bw couldn't open a remote URL"
+## "Could not open alignment file" from figwig bam2bw on a remote URL
 
 Streaming needs the remote store to support range requests. Public ENCODE HTTPS
 BAMs, S3-presigned URLs, and standard GCS objects work. Credentialed buckets

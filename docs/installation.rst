@@ -112,9 +112,10 @@ checks.
        used by the marginalize subcommand.
    * - ``macs3``
      - Peak calling, invoked by the ``pipeline`` subcommand.
-   * - ``bam2bw`` (≥ 0.4.1)
-     - BAM/SAM/fragment file → bigWig conversion; used by the
-       ``pipeline`` subcommand and supports remote input URLs.
+   * - ``figwig[bam2bw]`` (≥ 0.1.0)
+     - BAM/SAM/fragment file → bigWig conversion with the
+       ``figwig bam2bw`` command; used by the ``pipeline`` subcommand
+       and supports remote input URLs.
    * - ``modisco`` (≥ 2.0)
      - TF-MoDISco motif discovery, invoked by the ``pipeline``
        subcommand.

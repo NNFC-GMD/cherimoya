@@ -252,12 +252,12 @@ the resulting ``*_peaks.narrowPeak`` is empty.
   ``preprocessing_parameters.callpeaks_format`` explicitly.
 
 
-bam2bw says "couldn't open" a remote URL
-----------------------------------------
+figwig bam2bw says "Could not open alignment file" for a remote URL
+-------------------------------------------------------------------
 
-Symptom: ``bam2bw`` fails on an ``s3://`` or ``https://`` path.
+Symptom: ``figwig bam2bw`` fails on an ``s3://`` or ``https://`` path.
 
-Cherimoya streams BAM/SAM and FASTA inputs through ``bam2bw`` /
+Cherimoya streams BAM/SAM and FASTA inputs through ``figwig bam2bw`` /
 ``tangermeme.io``. Streaming requires the remote storage to support
 range requests for the file type involved. Public HTTPS BAMs hosted
 on ENCODE, S3-presigned URLs, and standard GCS objects all work. If

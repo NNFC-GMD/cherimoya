@@ -1,6 +1,34 @@
 Changelog
 =========
 
+v0.3.1 (unreleased)
+-------------------
+
+CLI and pipeline
+~~~~~~~~~~~~~~~~
+
+* The pipeline converts SAM/BAM and fragment files to bigWigs with
+  ``figwig bam2bw`` instead of ``bam2bw``, and the dependency is
+  ``figwig[bam2bw]>=0.1.0`` in place of ``bam2bw>=0.4.1``. ``figwig
+  bam2bw`` takes bam2bw's arguments and writes the same bigWig entries,
+  and reads local BAM and BED/tsv files faster: figwig's benchmarks give
+  4.65 s against bam2bw 0.5.1's 58.48 s on a 2.4 GB ATAC-seq BAM at
+  ``-p 2``.
+
+* ``preprocessing_parameters.n_jobs``, 8 by default, is the number of
+  cores the conversion runs on. The pipeline passed ``-p -1`` to bam2bw,
+  where it meant one process per input file. figwig's ``-p`` is a
+  number of cores, so ``-1`` would take every CPU of the machine, and
+  figwig's benchmarks show no gain past 8 threads on that BAM (1.74 s at
+  8, 1.82 s at 32).
+
+Documentation
+~~~~~~~~~~~~~
+
+* ``paired_end`` (``-pe``) was documented as changing how bam2bw
+  reconstructs fragments. It only sets the MACS3 format to ``BAMPE``,
+  and the converter never receives it.
+
 v0.3.0
 ------
 

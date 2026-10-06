@@ -57,7 +57,7 @@ Steps invoked, in order:
 
 1. MACS3 peak calling on the ChIP BAMs with the input BAMs as
    controls (output: ``ctcf_peaks.narrowPeak``).
-2. ``bam2bw`` converts the ChIP and input BAMs to stranded bigWigs
+2. ``figwig bam2bw`` converts the ChIP and input BAMs to stranded bigWigs
    (``ctcf.+.bw``, ``ctcf.-.bw``, ``ctcf.control.+.bw``,
    ``ctcf.control.-.bw``).
 3. GC-matched negative sampling (``ctcf.negatives.bed``).

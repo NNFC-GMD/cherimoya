@@ -38,8 +38,8 @@ Common conventions
   multiple values. Single-string scalars are coerced to a one-element
   list internally in some places.
 * Path-valued keys can be remote URLs (``http://``, ``https://``,
-  ``s3://``, ``gs://``). Remote paths are streamed by ``bam2bw`` and
-  ``tangermeme.io`` and skipped by the pre-flight existence check
+  ``s3://``, ``gs://``). Remote paths are streamed by ``figwig bam2bw``
+  and ``tangermeme.io`` and skipped by the pre-flight existence check
   inside ``cherimoya pipeline``.
 
 
@@ -99,8 +99,8 @@ pointers.
      - Output JSON path.
    * - ``-pe, --paired_end``
      - flag
-     - Treat input as paired-end. Affects MACS3 file format
-       (``BAMPE``) and ``bam2bw`` fragment reconstruction.
+     - Treat input as paired-end. Sets the MACS3 file format
+       (``BAMPE``); it is not passed to ``figwig bam2bw``.
    * - ``-sf, --scale_factor``
      - float
      - Multiplier on the raw read counts. Default 1 (no scaling).
@@ -214,7 +214,7 @@ JSON schema (top-level keys, with defaults from
        subprocess.
    * - ``preprocessing_parameters``
      - (sub-dict, below)
-     - Settings for MACS3 peak calling and ``bam2bw``.
+     - Settings for MACS3 peak calling and ``figwig bam2bw``.
    * - ``fit_parameters``
      - (sub-dict, below)
      - Training parameters.
@@ -268,7 +268,12 @@ preprocessing_parameters
      - Multiplier on raw counts.
    * - ``read_depth``
      - ``false``
-     - Pass ``-r`` to ``bam2bw`` to scale by sequencing depth.
+     - Pass ``-r`` to ``figwig bam2bw`` to scale by sequencing depth.
+   * - ``n_jobs``
+     - 8
+     - The number of cores ``figwig bam2bw`` uses to convert reads to
+       bigWigs, passed as its ``-p``. A negative number counts back
+       from the number of CPUs, so ``-1`` uses all of them.
    * - ``callpeaks_format``
      - ``null``
      - MACS3 ``-f`` value. ``null`` auto-detects from the input file
