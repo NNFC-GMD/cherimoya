@@ -243,6 +243,7 @@ default_pipeline_parameters = {
 		'neg_shift': 0,
 		'scale_factor': 1,
 		'read_depth': False,
+		'n_jobs': 8,
 		'callpeaks_format': None,
 		'callpeaks_gsize': 'hs',
 		'callpeaks_q': 0.05,
