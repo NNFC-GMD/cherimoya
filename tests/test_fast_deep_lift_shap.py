@@ -441,9 +441,9 @@ def test_an_unvalidated_tangermeme_warns(monkeypatch):
 
 def test_importing_the_engine_changes_no_environment_variable():
 	"""In a fresh process, importing the fast engine leaves os.environ as it
-	was."""
+	was after importing cherimoya, which imports the engine's dependencies."""
 
-	code = ("import os; before = dict(os.environ); "
+	code = ("import os; import cherimoya; before = dict(os.environ); "
 		"import cherimoya.fast_deep_lift_shap; "
 		"changed = sorted(k for k in set(before) | set(os.environ) "
 		"if before.get(k) != os.environ.get(k)); "

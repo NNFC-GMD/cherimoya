@@ -220,6 +220,12 @@ their kernels by timing in each process, so two runs of the default engine
 on the same inputs differ too. The fast engine is checked against that
 noise rather than against zero, on every run (below).
 
+The engine reproduces tangermeme's rules, so it is tied to the tangermeme
+it was validated against: tangermeme 1.5.0
+(``cherimoya.fast_deep_lift_shap.VALIDATED_TANGERMEME_VERSIONS``). With
+another release it runs and warns; its audit then compares it with that
+release's ``deep_lift_shap``.
+
 Every run checks itself twice:
 
 1. **A forward self-check**, before anything is attributed: on the first

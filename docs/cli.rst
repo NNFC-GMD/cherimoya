@@ -531,7 +531,8 @@ attribute_parameters
        files (see :doc:`tutorials/attribution`). With ``"output":
        "profile"``, ``"fast"`` warns and the default engine runs.
        Saturation mutagenesis ignores it. ``"fast"`` needs ``dtype``
-       ``"float32"`` or ``null``.
+       ``"float32"`` or ``null``, and was validated with tangermeme
+       1.5.0; another tangermeme release warns.
    * - ``precision``
      - ``"tf32"``
      - ``"fast"`` engine only. ``"tf32"``: matrix products and
