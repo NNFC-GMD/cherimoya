@@ -526,10 +526,12 @@ attribute_parameters
      - ``"default"``
      - How DeepLIFT/SHAP is computed: ``"default"``, tangermeme's
        ``deep_lift_shap``, or ``"fast"``, Cherimoya's fast engine for the
-       count head, which computes the same attributions several times
-       faster on a GPU, checks itself on every run and writes two more
-       files (see :doc:`tutorials/attribution`). With ``"output":
-       "profile"``, ``"fast"`` warns and the default engine runs.
+       count head, which agrees with the default engine nearly as closely
+       as two runs of the default engine agree with each other, runs
+       several times faster on a GPU, checks itself on every run and
+       writes two more files (see :doc:`tutorials/attribution`). With
+       ``"output": "profile"``, ``"fast"`` warns and the default engine
+       runs.
        Saturation mutagenesis ignores it. ``"fast"`` needs ``dtype``
        ``"float32"`` or ``null``, and was validated with tangermeme
        1.5.0; another tangermeme release warns.
@@ -542,9 +544,9 @@ attribute_parameters
      - ``"auto"``
      - ``"fast"`` engine only. Sequences per step, each with its
        ``n_shuffles`` references. ``"auto"`` takes the largest step whose
-       estimated memory fits ``mem_budget_gb`` and 0.6 of the GPU's free
-       memory, at most 32 sequences, and 8 on the CPU. A step that runs
-       out of memory is halved and retried.
+       estimated memory fits ``mem_budget_gb`` and 0.6 of the GPU memory
+       this process can use, at most 32 sequences, and 8 on the CPU. A
+       step that runs out of memory is halved and retried.
    * - ``mem_budget_gb``
      - 12.0
      - ``"fast"`` engine only. The GPU memory, in GB of 1e9 bytes, that
@@ -552,8 +554,8 @@ attribute_parameters
    * - ``ref_workers``
      - ``null``
      - ``"fast"`` engine only. Processes that draw the references ahead
-       of the GPU. ``null`` is min(8, CPUs - 2); 0 draws them in the main
-       process.
+       of the GPU. ``null`` is min(8, CPUs - 2), at least 1; 0 draws them in
+       the main process.
    * - ``audit``
      - 8
      - ``"fast"`` engine only. Evenly spaced sequences that tangermeme's

@@ -2,12 +2,12 @@
 pipelined steps and the recovery from running out of memory.
 
 Every fp32 path through these models sits 1e-6 to 1e-4 (relative L2, per
-pair) from exact arithmetic, because the rescale rule's secants, (g(z_x) -
+pair) from float64, because the rescale rule's secants, (g(z_x) -
 g(z_r)) / (z_x - z_r), turn a last-bit difference in a GELU input into a
 relative error of about one ulp / |z_x - z_r|. Any reordering of a sum shows
 up this way: another matrix-product blocking, a fused reduction, another
 device. So the compiled passes and the GPU are held to the float64 engine on
-the CPU, as exact arithmetic: they must be no farther from it than the path
+the CPU, as the reference: they must be no farther from it than the path
 they replace, by 1.2 x at the median and 2 x at the max, and within 1e-3 of
 that path. The max over the pairs is one element's amplified rounding, and
 moves between compilations: Inductor picks its reduction configurations by
@@ -101,8 +101,8 @@ _TRUTH = {}
 
 
 def _truth(config, kind):
-	"""The float64 engine on the CPU with "two_pass" statistics: exact
-	arithmetic for these comparisons."""
+	"""The float64 engine on the CPU with "two_pass" statistics: the
+	float64 reference for these comparisons."""
 
 	if (config, kind) not in _TRUTH:
 		X, R = _case(config, kind)

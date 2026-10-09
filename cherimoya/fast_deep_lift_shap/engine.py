@@ -42,7 +42,8 @@ Deliberate differences from the default engine:
 * The count head casts the pooled stream to the count Linear's dtype, where
   `Cherimoya` calls ``.float()``. Every model this engine accepts on a GPU
   has float32 parameters, so the two are the same operation; a float64 model
-  on the CPU, which the tests use as exact arithmetic, keeps float64.
+  on the CPU, which the tests use for their high-precision comparisons,
+  keeps float64.
 * The engine returns its results in the model's dtype and warns once per
   run, with a summary of the convergence deltas, where tangermeme warns once
   per batch. A `warning_threshold` of None means no warning.
@@ -134,7 +135,7 @@ default engine's full batch at its default `batch_size`."""
 
 AUTO_SEQS_PER_STEP = 8
 """Sequences per step for `seqs_per_step="auto"` on the CPU. On CUDA "auto"
-sizes steps from the free memory."""
+sizes steps from the memory the process can use."""
 
 SEED_RANGE = 9_999_999
 """`random_state=None` draws a base seed from [0, SEED_RANGE), once per

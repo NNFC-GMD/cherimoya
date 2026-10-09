@@ -9,14 +9,17 @@ Attribution
 
 * ``cherimoya attribute`` has a fast DeepLIFT/SHAP engine for the count
   head, ``"engine": "fast"``, in ``cherimoya.fast_deep_lift_shap``. It
-  computes the attributions of tangermeme's ``deep_lift_shap`` with
-  Cherimoya's rules: the same rules, the same dinucleotide-shuffled
-  references with the same seeds, and the same hypothetical projection.
-  It forwards each sequence once rather than once per reference, runs the
-  backward over the sequence half of each pair only, and compiles its
-  passes on a GPU. In an interleaved benchmark on one H100 that four
-  training processes shared, it attributed 948 sequence-reference pairs
-  per second against the default engine's 106, at a ``batch_size`` of 20.
+  computes what tangermeme's ``deep_lift_shap`` computes with Cherimoya's
+  rules, up to floating-point rounding: the same rules, the same
+  dinucleotide-shuffled references with the same seeds, and the same
+  hypothetical projection. It forwards each sequence once rather than
+  once per reference, runs the backward over the sequence half of each
+  pair only, and compiles its passes on a GPU. In an interleaved
+  benchmark on one H100 shared with four, then five, other processes
+  (three of them training runs), it attributed 948 sequence-reference
+  pairs per second at steady state, with ``mem_budget_gb`` 7.5 and
+  ``ref_workers`` 3, against the default engine's 106 at a
+  ``batch_size`` of 20.
   Every run compares its forward with the model's before it starts and,
   after writing its outputs, attributes 8 evenly spaced sequences again
   with ``deep_lift_shap`` to compare (``audit``). It also writes the

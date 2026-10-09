@@ -81,8 +81,10 @@ call.
 
 ``engine`` chooses how DeepLIFT/SHAP is computed for the count head:
 ``"default"``, tangermeme's ``deep_lift_shap`` as above, or ``"fast"``, an
-engine that computes the same attributions several times faster on a GPU
-(see `The fast DeepLIFT/SHAP engine for the count head`_).
+engine that runs several times faster on a GPU and whose attributions agree
+with the default engine's nearly as closely as two runs of the default
+engine agree with each other (see `The fast DeepLIFT/SHAP engine for the
+count head`_).
 
 The CLI automatically:
 
@@ -168,7 +170,7 @@ The fast DeepLIFT/SHAP engine for the count head
 
 With ``"engine": "fast"``, ``cherimoya attribute`` computes the count
 head's DeepLIFT/SHAP attributions with ``cherimoya.fast_deep_lift_shap``
-instead of tangermeme's ``deep_lift_shap``. The attributions are the same:
+instead of tangermeme's ``deep_lift_shap``. The method is the same:
 the same rules (tangermeme's rescale rule at every GELU and the
 normalization rule of ``conv_norm_op``), the same dinucleotide-shuffled
 references with the same seeds, and the same hypothetical projection and
@@ -217,8 +219,12 @@ agree to a relative L2 distance of 1e-9 in float64. On a GPU neither
 engine is bitwise reproducible: with ``"precision": "tf32"``, the default,
 matrix products and convolutions round in TF32, and cuDNN and Triton pick
 their kernels by timing in each process, so two runs of the default engine
-on the same inputs differ too. The fast engine is checked against that
-noise rather than against zero, on every run (below).
+on the same inputs differ too. On five trained models (256 sequences, 20
+references each), the fast engine's per-sequence hypothetical attributions
+were a median relative L2 distance of 8.4e-5 to 9.9e-5 from the default
+engine's, against 7.0e-5 to 8.4e-5 between two runs of the default engine.
+The fast engine is therefore checked on every run against fixed tolerances
+set above that noise, rather than for equality (below).
 
 The engine reproduces tangermeme's rules, so it is tied to the tangermeme
 it was validated against: tangermeme 1.5.0
@@ -255,11 +261,11 @@ Its options, all ignored by the default engine (see :doc:`../cli`):
 * ``seqs_per_step`` and ``mem_budget_gb`` — sequences per step, each with
   its ``n_shuffles`` references, or ``"auto"`` (default), which takes the
   largest step whose estimated memory fits ``mem_budget_gb`` (12 by
-  default) and 0.6 of the GPU's free memory, at most 32 sequences, and 8
-  sequences on the CPU. A step that runs out of memory is halved and
-  retried. ``batch_size`` does not size the fast engine's steps.
+  default) and 0.6 of the GPU memory this process can use, at most 32
+  sequences, and 8 sequences on the CPU. A step that runs out of memory is
+  halved and retried. ``batch_size`` does not size the fast engine's steps.
 * ``ref_workers`` — processes drawing the references; ``null`` (default)
-  is min(8, CPUs - 2), and 0 draws them in the main process.
+  is min(8, CPUs - 2), at least 1, and 0 draws them in the main process.
 * ``audit`` — sequences the audit attributes again.
 
 From Python, the engine takes the model and returns the attributions over
